@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<configurationSnapshot xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="urn:schemas-microsoft-com:xml-wcfconfigurationsnapshot">
+  <behaviors />
+  <bindings>
+    <binding digest="System.ServiceModel.Configuration.BasicHttpBindingElement, System.ServiceModel, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089:&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-16&quot;?&gt;&lt;Data name=&quot;UserAuthSoap1&quot; /&gt;" bindingType="basicHttpBinding" name="UserAuthSoap1" />
+    <binding digest="System.ServiceModel.Configuration.CustomBindingElement, System.ServiceModel, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089:&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-16&quot;?&gt;&lt;Data name=&quot;UserAuthSoap12&quot;&gt;&lt;httpTransport /&gt;&lt;textMessageEncoding messageVersion=&quot;Soap12&quot; /&gt;&lt;/Data&gt;" bindingType="customBinding" name="UserAuthSoap12" />
+  </bindings>
+  <endpoints>
+    <endpoint normalizedDigest="&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-16&quot;?&gt;&lt;Data address=&quot;http://localhost:8090/webservices/userauth&quot; binding=&quot;basicHttpBinding&quot; bindingConfiguration=&quot;UserAuthSoap1&quot; contract=&quot;ServiceReference2.UserAuthSoap&quot; name=&quot;UserAuthSoap1&quot; /&gt;" digest="&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-16&quot;?&gt;&lt;Data address=&quot;http://localhost:8090/webservices/userauth&quot; binding=&quot;basicHttpBinding&quot; bindingConfiguration=&quot;UserAuthSoap1&quot; contract=&quot;ServiceReference2.UserAuthSoap&quot; name=&quot;UserAuthSoap1&quot; /&gt;" contractName="ServiceReference2.UserAuthSoap" name="UserAuthSoap1" />
+    <endpoint normalizedDigest="&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-16&quot;?&gt;&lt;Data address=&quot;http://localhost:8090/webservices/userauth&quot; binding=&quot;customBinding&quot; bindingConfiguration=&quot;UserAuthSoap12&quot; contract=&quot;ServiceReference2.UserAuthSoap&quot; name=&quot;UserAuthSoap12&quot; /&gt;" digest="&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-16&quot;?&gt;&lt;Data address=&quot;http://localhost:8090/webservices/userauth&quot; binding=&quot;customBinding&quot; bindingConfiguration=&quot;UserAuthSoap12&quot; contract=&quot;ServiceReference2.UserAuthSoap&quot; name=&quot;UserAuthSoap12&quot; /&gt;" contractName="ServiceReference2.UserAuthSoap" name="UserAuthSoap12" />
+  </endpoints>
+</configurationSnapshot>
