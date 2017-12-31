@@ -6,6 +6,17 @@ using System.Linq;
 using System.Text;
 using System.Web.Http;
 using System.Web.Http.SelfHost;
+using System.Net.Http.Formatting;
+using System.Net.Http.Headers;
+using System.Net.Http;
+using System.IO;
+using System.Threading.Tasks;
+using System.ComponentModel;
+using System.Globalization;
+using System.Web.Http.ModelBinding;
+using System.Collections.Concurrent;
+using System.Web.Http.Controllers;
+using System.Web.Http.ValueProviders;
 
 namespace WebApiWithWebServices
 {
@@ -59,7 +70,55 @@ namespace WebApiWithWebServices
             
             app.UseWebApi(apiconfig);
         }
+    }
+
+    [ModelBinder(typeof(GeoPointModelBinder))]
+    public class DysoftParams
+    {
+        public string BodyString { get; internal set; } = "";
+
+        public object Query { get; internal set; }
+
+        public object Body { get; internal set; }
+    }
 
 
+    public class GeoPointModelBinder : IModelBinder
+    {
+        static GeoPointModelBinder()
+        {
+
+        }
+
+        public bool BindModel(HttpActionContext actionContext, ModelBindingContext bindingContext)
+        {
+            #region 数据有效性判断
+            if (bindingContext.ModelType != typeof(DysoftParams))
+            {
+                return false;
+            }
+
+            //不支持文件上传的数据流 multipart/form-data
+            if (actionContext.Request.Content.IsMimeMultipartContent())
+            {
+                return false;
+            }
+            #endregion
+
+            var queryKeyValues = actionContext.Request.RequestUri.ParseQueryString();
+
+            var urlEncodeKeyValues = actionContext.Request.Content.ReadAsFormDataAsync().Result;
+
+            var jsonKeyValues = actionContext.Request.Content.ReadAsStringAsync().Result;
+
+
+            DysoftParams result = new DysoftParams();
+            result.BodyString = actionContext.Request.Content.ReadAsStringAsync().Result;
+            
+            var v2 = actionContext.Request.Content.ReadAsStringAsync().Result;
+
+            bindingContext.Model = result;
+            return true;
+        }
     }
 }
