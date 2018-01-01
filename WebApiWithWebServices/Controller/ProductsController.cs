@@ -14,11 +14,16 @@ namespace WebApiWithWebServices.Controller
         }
 
         [System.Web.Http.HttpPost,System.Web.Http.HttpGet]
-        public string GetString(DysoftParams location123)
+        public string GetString(DysoftParams data)
         {
+            var getValue = data["getValue"];
+            var getValue2 = data["getValue2"];
 
-            var v1 = Request.Content.ReadAsStringAsync().Result;
-            var v2 = Request.Content.ReadAsStringAsync().Result;
+            int intValue = data.Body.intValue;
+            string strValue = data.Body.strValue;
+            Guid guidValue = data.Param.guidValue;
+
+            DateTime? dateValue = data.Param.dateValue;
             return "123";
         }
     }

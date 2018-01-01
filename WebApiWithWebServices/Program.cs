@@ -17,6 +17,8 @@ using System.Web.Http.ModelBinding;
 using System.Collections.Concurrent;
 using System.Web.Http.Controllers;
 using System.Web.Http.ValueProviders;
+using System.Dynamic;
+using System.Collections.Specialized;
 
 namespace WebApiWithWebServices
 {
@@ -72,20 +74,166 @@ namespace WebApiWithWebServices
         }
     }
 
-    [ModelBinder(typeof(GeoPointModelBinder))]
+    [ModelBinder(typeof(DysoftParamsModelBinder))]
     public class DysoftParams
     {
+        public DysoftParams()
+        {
+            Body = new BodyDynamic(this);
+            Query = new QueryDynamic(this);
+            Param = new QueryOrBodyDynamic(this);
+        }
+
         public string BodyString { get; internal set; } = "";
 
-        public object Query { get; internal set; }
+        public dynamic Query { get; internal set; } 
 
-        public object Body { get; internal set; }
+        public dynamic Body { get; internal set; }
+
+        public dynamic Param { get; internal set; }
+
+
+        public System.Collections.Specialized.NameValueCollection queryKeyValues { get; internal set; }
+        public Dictionary<string, string> urlEncodeKeyValues { get; internal set; }
+        public Dictionary<string, object> jsonKeyValues { get; internal set; }
+
+        public string this[string key]
+        {
+            get
+            {
+                var value = GetValue(key);
+                return value?.ToString() ?? "";
+            }
+        }
+
+        internal object GetValue(string key)
+        {
+            object value = null;
+
+            if (urlEncodeKeyValues != null && urlEncodeKeyValues.ContainsKey(key))
+            {
+                value = System.Web.HttpUtility.UrlDecode(urlEncodeKeyValues[key]);
+            }
+            else if (jsonKeyValues != null && jsonKeyValues.ContainsKey(key))
+            {
+                value = jsonKeyValues[key];
+            }
+            else if (queryKeyValues != null && queryKeyValues.Count > 0)
+            {
+                value = queryKeyValues[key];
+            }
+            return value;
+        }
+        
+    }
+    
+    public class QueryOrBodyDynamic : System.Dynamic.DynamicObject
+    {
+        private DysoftParams data;
+        public QueryOrBodyDynamic(DysoftParams _data)
+        {
+            data = _data;
+        }
+        public override bool TryGetMember(GetMemberBinder binder, out object result)
+        {
+            object value = null;
+            var name = binder.Name;
+
+            value = data.GetValue(name);
+            result = new AutoConvertSupport(value);
+            return true;
+        }
     }
 
-
-    public class GeoPointModelBinder : IModelBinder
+    public class QueryDynamic : System.Dynamic.DynamicObject
     {
-        static GeoPointModelBinder()
+        private DysoftParams data;
+        public QueryDynamic(DysoftParams _data)
+        {
+            data = _data;
+        }
+        public override bool TryGetMember(GetMemberBinder binder, out object result)
+        {
+            object value = null;
+            var name = binder.Name;
+
+            value = data.queryKeyValues[name];
+            result = new AutoConvertSupport(value);
+            return true;
+        }
+    }
+
+    public class BodyDynamic : System.Dynamic.DynamicObject
+    {
+        private DysoftParams data;
+        public BodyDynamic(DysoftParams _data)
+        {
+            data = _data;
+        }
+
+        public override bool TryGetMember(GetMemberBinder binder, out object result)
+        {
+            object value = null;
+            var name = binder.Name;
+
+            if (data.urlEncodeKeyValues != null && data.urlEncodeKeyValues.ContainsKey(name))
+            {
+                value = System.Web.HttpUtility.UrlDecode(data.urlEncodeKeyValues[name]);
+            }
+            else if (data.jsonKeyValues != null && data.jsonKeyValues.ContainsKey(name))
+            {
+                value = data.jsonKeyValues[name];
+            }
+
+            result = new AutoConvertSupport(value);
+            return true;
+        }
+    }
+
+    internal class AutoConvertSupport : DynamicObject
+    {
+        private readonly object _value;
+
+        public AutoConvertSupport(object value)
+        {
+            _value = value;
+        }
+
+        public override bool TryConvert(ConvertBinder binder, out object result)
+        {
+            var type = binder.Type;
+            result = ChangeType(_value, binder.Type);
+            return true;
+        }
+
+        static public object ChangeType(object value, Type type)
+        {
+            if (value == null && type.IsGenericType) return Activator.CreateInstance(type);
+            if (value == null) return null;
+            if (type == value.GetType()) return value;
+            if (type.IsEnum)
+            {
+                if (value is string)
+                    return Enum.Parse(type, value as string);
+                else
+                    return Enum.ToObject(type, value);
+            }
+            if (!type.IsInterface && type.IsGenericType)
+            {
+                Type innerType = type.GetGenericArguments()[0];
+                object innerValue = ChangeType(value, innerType);
+                return Activator.CreateInstance(type, new object[] { innerValue });
+            }
+            if (value is string && type == typeof(Guid)) return new Guid(value as string);
+            if (value is string && type == typeof(Version)) return new Version(value as string);
+            if (!(value is IConvertible)) return value;
+            return Convert.ChangeType(value, type);
+        }
+    }
+
+    public class DysoftParamsModelBinder : IModelBinder
+    {
+        static DysoftParamsModelBinder()
         {
 
         }
@@ -101,21 +249,44 @@ namespace WebApiWithWebServices
             //不支持文件上传的数据流 multipart/form-data
             if (actionContext.Request.Content.IsMimeMultipartContent())
             {
-                return false;
+                bindingContext.Model = new DysoftParams();
+                return true;
             }
             #endregion
 
-            var queryKeyValues = actionContext.Request.RequestUri.ParseQueryString();
-
-            var urlEncodeKeyValues = actionContext.Request.Content.ReadAsFormDataAsync().Result;
-
-            var jsonKeyValues = actionContext.Request.Content.ReadAsStringAsync().Result;
-
-
             DysoftParams result = new DysoftParams();
             result.BodyString = actionContext.Request.Content.ReadAsStringAsync().Result;
-            
-            var v2 = actionContext.Request.Content.ReadAsStringAsync().Result;
+
+            result.queryKeyValues = actionContext.Request.RequestUri.ParseQueryString();
+          
+            try
+            {
+                var bodyStr = actionContext.Request.Content.ReadAsStringAsync().Result.Trim();
+                if (bodyStr.StartsWith("{") && bodyStr.EndsWith("}"))
+                {
+                    result.jsonKeyValues = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(bodyStr);
+                }
+                else
+                {
+                    result.urlEncodeKeyValues = bodyStr.Split(new char[] { '&' },StringSplitOptions.RemoveEmptyEntries).Select(a => {
+                        var arr = a.Split('=');
+
+                        var key = arr[0];
+                        var value = "";
+                        if (arr.Length > 1) {
+                            value = arr[1];
+                        }
+                        return new
+                        {
+                            key,
+                            value
+                        };
+                    }).ToDictionary(a=>a.key,a=>a.value);
+                }
+            }
+            catch
+            {
+            }
 
             bindingContext.Model = result;
             return true;
