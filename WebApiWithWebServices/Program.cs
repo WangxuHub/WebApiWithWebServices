@@ -27,9 +27,14 @@ namespace WebApiWithWebServices
         static void Main(string[] args)
         {
             //使用Owin启动 支持主机名*
-            //Microsoft.Owin.Host
+            //Microsoft.Owin.Hosting
             //Microsoft.Owin.Host.HttpListener
-            var basicManageApp = Microsoft.Owin.Hosting.WebApp.Start<Startup>("http://*:8090");
+            var options = new Microsoft.Owin.Hosting.StartOptions();
+            options.Urls.Add("https://*:9443/");
+            options.Urls.Add("https://*:9444/");
+            options.Urls.Add("http://*:8090/");
+
+            var basicManageApp = Microsoft.Owin.Hosting.WebApp.Start<Startup>(options);
             Console.WriteLine("基础管理服务已启动");
 
 
@@ -69,7 +74,9 @@ namespace WebApiWithWebServices
                 defaults: new { controller = "Home", action = "Index", id = RouteParameter.Optional });
 
             #endregion
-            
+
+          //  apiconfig.MessageHandlers.Add(new RequireHttpsHandler());
+
             app.UseWebApi(apiconfig);
         }
     }
